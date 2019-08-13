@@ -10,7 +10,7 @@ provider:
   # required parameter from command line --domain
   domainName: ${opt:domain}
   # Region us-east-1 is tied to certificates
-  region: ${opt:region, 'us-east-1'
+  region: ${opt:region, 'us-east-1'}
   # profiles are setup by you on your local machine
   profile: ${self:custom.profiles.${self:provider.stage}}
   # thinking ahead to data table
@@ -52,7 +52,17 @@ provider:
       Resource: "*"
 
 functions:
+  authorize:
+    handler: handler.authorize
 
+  signin:
+    handler: handler.signin
+    description: "An authorized signin will return a JWT"
+    events:
+      - http:
+          path: signin
+          method: post
+          cors: true
   # index:
   #  handler: handler.index
   #  description: "documents keyword index to documents."
@@ -62,7 +72,6 @@ functions:
   #        path: keywords
   # search for list of keywords
   # /keywords?keywords=a the to
-
   index:
     handler: handler.index
     description: "returns index to documents for given words."
@@ -71,7 +80,9 @@ functions:
           method: get
           path: index
           cors: true
-          private: true # apikey
+          authorizer: authorize # requires a signin
+          # private: true # apikey
+
   # get items that make up a document
   # document/{pk}
   document:
@@ -85,6 +96,7 @@ functions:
           private: true # apikey
 
 plugins:
+  # configures custom domain ...
   - serverless-domain-manager
 
 custom:
@@ -129,5 +141,8 @@ resources:
   # API Gateway Errors
   - ${file(resources/api-gateway-errors.yml)}
   # DynamoDB
-  # be careful files are very sensitive to non-visible character dont cut and paste
-  - ${file(resources/dynamodb-table.yml)}
+   # be careful files are very sensitive to non-visible character dont cut and paste
+  # including table resources (resources/dynamodb-table.yml) will cause a deploy errror
+  #  * ServerlessError: An error occurred: Table1 - greet_dev already exists.
+  # uncomment the following to create a table from scratch
+  # - ${file(resources/dynamodb-table.yml)}

@@ -1,5 +1,7 @@
 
 import pkg from './package'
+console.log('process.env.NODE_ENV: ' + process.env.NODE_ENV)
+console.log('process.env.DEPLOY_ENV: ' + process.env.DEPLOY_ENV)
 if (process.env.NODE_ENV !== 'production') {
   process.env.DEPLOY_ENV=''
   require('dotenv').config()
@@ -16,6 +18,11 @@ const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
 export default {
   ...routerBase,
   mode: 'spa',
+  env: {
+    GUEST: process.env.GUEST || '{"username": "guest", "password": "Guest.9182"}',
+    SIGNIN: process.env.SIGNIN || 'https://api.lyttlebit.com/soke/signin',
+    INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/hello'
+  },
   /*
   ** Headers of the page
   */

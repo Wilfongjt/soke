@@ -54,6 +54,9 @@ export default {
         title: 'Soke',
         subtitle: 'Type a word!',
         items: []
+      },
+      session: {
+        authorizationToken: 'Authorization'
       }
     }
   },
@@ -64,10 +67,30 @@ export default {
     awsHandlers () {
       return new AWSHandlers(this)
     },
+    awsGuestHeader () {
+      return {
+        'Content-Type': 'application/json'
+      }
+    },
+    awsGuestBody () {
+      return process.env.GUEST
+    },
+    /*
     awsHeader () {
       return {
         'x-api-key': process.env.APIKEY
       }
+    },
+    */
+    awsGatewayHeader () {
+      return {
+        // 'x-api-key': this.session.token,
+        'Content-Type': 'application/json',
+        'Authorization': this.session.authorizationToken
+      }
+    },
+    awsGatewayBody () {
+      return this.form
     },
     awsGatewayParameters () {
       return 'keywords=%s'.replace('%s', this.form.words)
@@ -81,6 +104,30 @@ export default {
         .replace('%s', process.env.INDEX)
         .replace('%p', this.awsGatewayParameters)
     }
+  },
+  mounted () {
+    // at this point we want to make a connection a guest connection to our services
+    this.log('process.env.SIGNIN')
+    this.awsHandlers.awsSignIn(process.env.SIGNIN, this.awsGuestHeader, this.awsGuestBody)
+      .then((response) => {
+        if (response.status === 200) {
+          this.session.authorizationToken = response.data.token
+          // check for results field
+          this.feedBack('Type another!')
+          this.addItem({
+            title: 'Authorization',
+            data: this.session.authorizationToken ? 'Ready to Go' : 'Unauthorized'
+          })
+        } else {
+          this.feedBack('Something unexpected happened!')
+          this.session.authorizationToken = 'Authorization'
+        }
+      })
+      .catch((err) => {
+        this.feedBack('Guest Sign In failed')
+        this.log('submit error 1: ' + err)
+        this.session.authorizationToken = 'Authorization'
+      })
   },
   methods: {
     log (msg) {
