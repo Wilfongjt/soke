@@ -5,6 +5,7 @@ console.log('process.env.DEPLOY_ENV: ' + process.env.DEPLOY_ENV)
 if (process.env.NODE_ENV !== 'production') {
   process.env.DEPLOY_ENV=''
   require('dotenv').config()
+  console.log('dotenv load')
 } else {
    // switch to
    process.env.DEPLOY_ENV='GH_PAGES'
@@ -12,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
 // allow static app to run in subfolder of host
 const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
    router: {
-     base: '/soke/'
+        base: '/soke20190815143820/'
    }
  } : {}
 export default {
@@ -21,7 +22,7 @@ export default {
   env: {
     GUEST: process.env.GUEST || '{"username": "guest", "password": "Guest.9182"}',
     SIGNIN: process.env.SIGNIN || 'https://api.lyttlebit.com/soke/signin',
-    INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/hello'
+    INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/index'
   },
   /*
   ** Headers of the page

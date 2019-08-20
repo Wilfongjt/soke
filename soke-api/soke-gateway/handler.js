@@ -1,14 +1,79 @@
 'use strict';
 const AWS = require('aws-sdk');
 const docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
+const authorizer = require('./authorizer');
+const users = require('./users');
+const JWT_EXPIRATION_TIME = '5m';
+
+const cors_headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,Accept-Langauge",
+    "Access-Control-Allow-Methods": "OPTIONS,GET"
+};
 /* Welcome to Serverless!
  * Generated from write_handler_starter.sh
  * See serverless.yml for configuration
 */
+
+// SIGNIN
+module.exports.signin = async (event, context) => {
+  // get un and pw
+  const { username, password } = JSON.parse(event.body);
+  try {
+    const user = users.signin(username, password);
+    const token = authorizer.generateToken({user});
+    const response = {
+      statusCode: 200,
+      headers: cors_headers,
+      body: JSON.stringify({
+        token
+      })
+    };
+    return response;
+  } catch(e) {
+    console.log('Error logging in: ${e.message}');
+    const response = { // Error response
+     statusCode: 401,
+     headers: {
+       'Access-Control-Allow-Origin': '*', // cors header
+     },
+     body: JSON.stringify({
+       error: e.message,
+     }),
+    };
+    return response;
+  }
+};
+// AUTHORIZE
+module.exports.authorize = async (event, context) => {
+  const token = event.authorizationToken;
+  try {
+    // verify JWT
+    const decoded = authorizer.decodeToken(token);
+    // Check  user has privileges
+    const user = decoded.user;
+    // Check privileges to resource
+    const isAllowed = authorizer.authorizeMe(user.scopes, event.methodArn);
+    // return IAM poloicy
+    const effect = isAllowed ? 'Allow' : 'Deny';
+    const userId = user.username;
+    const authorizerContext = { user: JSON.stringify(user) };
+    const policy = authorizer.generatePolicy(userId, effect, event.methodArn, authorizerContext);
+
+    return policy;
+  } catch (error) {
+    console.log('Unauthorized');
+    return error.message;
+
+  }
+};
+
 module.exports.index = async (event) => {
   // return list of words with link to documents
   // need to remove duplicate words
-  let keywords = event.queryStringParameters && event.queryStringParameters.keywords;
+  //let keywords = event.queryStringParameters && event.queryStringParameters.keywords;
+  const body = JSON.parse(event.body);
+  let keywords = undefined;
   let vals = []; // list of keywords
   // let param = {};
   let param_list = [];
@@ -19,13 +84,16 @@ module.exports.index = async (event) => {
       "Access-Control-Allow-Headers": "Content-Type,Accept-Langauge",
       "Access-Control-Allow-Methods": "OPTIONS,GET"
   };
+  if (body.words !== null) {
+    keywords = body.words;
+  }
   // keyword not sent
   if (keywords === undefined
     || keywords === null
   ) {
 
     return {
-      statusCode: 403, // forbidden
+      statusCode: 200, // no requested keywords
       headers: headers,
       body: JSON.stringify({})
     };

@@ -274,6 +274,9 @@ class DocumentProcess(DataProcessInterface):
         ############ Documents
         # load up the records for the dump
         #
+        
+        table
+        
         self.records = {'documents': []}
         
         print('documents_output_limit: ', documents_output_limit )

@@ -22,6 +22,16 @@ class AWSHandlers {
     // response.data.token
     return response
   }
+
+  async awsIndex (awsGatewayURL, awsGatewayHeader, awsGatewayBody) {
+    const response = await this.component.$axios({
+      url: awsGatewayURL,
+      method: 'post',
+      headers: awsGatewayHeader,
+      data: awsGatewayBody })
+    return response
+  }
+
   async awsGET (awsGatewayURLWithParameters, awsHeader) {
     const response = await this.component.$axios(awsGatewayURLWithParameters, { headers: awsHeader })
     return response

@@ -77,7 +77,7 @@ functions:
     description: "returns index to documents for given words."
     events:
       - http:
-          method: get
+          method: post
           path: index
           cors: true
           authorizer: authorize # requires a signin

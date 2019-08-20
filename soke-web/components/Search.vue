@@ -12,11 +12,6 @@
         <input id="words" v-model="form.words" placeholder="words">
       </p>
       <p>
-        <!-- span>
-          <button class="button" type="button" @click="wordMe();">
-            Word Me
-          </button>
-        </span -->
         <span>
           <button :disabled="form.submitStatus === 'PENDING'" class="button" type="submit">
             Submit!
@@ -24,7 +19,7 @@
         </span>
       </p>
     </form>
-    <!--ul id="search-results"-->
+    <!-- Search Result -->
     <div v-for="item in page.items" :key="item.id">
       <span>&nbsp;</span>
       <p class="subtitle">
@@ -34,13 +29,11 @@
         <span v-html="item.description" />
       </p>
     </div>
-    <!--/ul-->
   </div>
 </template>
 
 <script>
 import { AWSHandlers } from './mixins/AWSHandlers.js'
-// if (process.env.NODE_ENV !== 'production') require('dotenv').config()
 
 export default {
 
@@ -75,16 +68,8 @@ export default {
     awsGuestBody () {
       return process.env.GUEST
     },
-    /*
-    awsHeader () {
-      return {
-        'x-api-key': process.env.APIKEY
-      }
-    },
-    */
     awsGatewayHeader () {
       return {
-        // 'x-api-key': this.session.token,
         'Content-Type': 'application/json',
         'Authorization': this.session.authorizationToken
       }
@@ -92,22 +77,13 @@ export default {
     awsGatewayBody () {
       return this.form
     },
-    awsGatewayParameters () {
-      return 'keywords=%s'.replace('%s', this.form.words)
-    },
-    awsSearchURL () {
+    awsGatewayURL () {
       // no keywords
-      if (this.form.words === null || this.form.words === undefined || this.form.words.length === 0) {
-        return process.env.INDEX
-      }
-      return '%s?%p'
-        .replace('%s', process.env.INDEX)
-        .replace('%p', this.awsGatewayParameters)
+      return process.env.INDEX
     }
   },
   mounted () {
     // at this point we want to make a connection a guest connection to our services
-    this.log('process.env.SIGNIN')
     this.awsHandlers.awsSignIn(process.env.SIGNIN, this.awsGuestHeader, this.awsGuestBody)
       .then((response) => {
         if (response.status === 200) {
@@ -115,17 +91,18 @@ export default {
           // check for results field
           this.feedBack('Type another!')
           this.addItem({
-            title: 'Authorization',
-            data: this.session.authorizationToken ? 'Ready to Go' : 'Unauthorized'
+            title: 'Ready',
+            data: this.session.authorizationToken ? 'Go' : 'Unauthorized'
           })
         } else {
           this.feedBack('Something unexpected happened!')
+          this.log('Something unexpected happened!')
           this.session.authorizationToken = 'Authorization'
         }
       })
       .catch((err) => {
-        this.feedBack('Guest Sign In failed')
-        this.log('submit error 1: ' + err)
+        this.feedBack('Guest Sign In failed (%s)'.replace('%s', err))
+        this.log('Guest Sign In failed (%s)'.replace('%s', err))
         this.session.authorizationToken = 'Authorization'
       })
   },
@@ -153,10 +130,15 @@ export default {
       return desc
     },
     onSubmit () { // submit button
+      // no words then no searches
+      if (this.form.words === null || this.form.words === undefined || this.form.words.length === 0) {
+        this.feedBack('Type one or more words!')
+        return
+      }
       // clear the list
       this.page.items = []
       // make the call
-      this.awsHandlers.awsGET(this.awsSearchURL, this.awsHeader)
+      this.awsHandlers.awsIndex(this.awsGatewayURL, this.awsGatewayHeader, this.awsGatewayBody)
         .then((response) => {
           if (response.status === 200) {
             let i = 0
@@ -170,11 +152,13 @@ export default {
             }
             this.feedBack('Type another!')
           } else {
-            this.feedBack('Something unexpected happened!')
+            this.feedBack('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
+            this.log('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
           }
         })
         .catch((err) => {
-          this.log('submit error: ' + err)
+          this.feedBack('Something unexpected happened (%s)!'.replace('%s', err))
+          this.log('Something unexpected happened (%s)!'.replace('%s', err))
         })
     },
     addItem (item) {
