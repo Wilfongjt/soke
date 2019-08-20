@@ -72,6 +72,7 @@ module.exports.index = async (event) => {
   // return list of words with link to documents
   // need to remove duplicate words
   //let keywords = event.queryStringParameters && event.queryStringParameters.keywords;
+  // convert the words to lowercase before search...get around mac capitalizing first char in textbox
   const body = JSON.parse(event.body);
   let keywords = undefined;
   let vals = []; // list of keywords
@@ -85,7 +86,7 @@ module.exports.index = async (event) => {
       "Access-Control-Allow-Methods": "OPTIONS,GET"
   };
   if (body.words !== null) {
-    keywords = body.words;
+    keywords = body.words.toLowerCase();
   }
   // keyword not sent
   if (keywords === undefined
