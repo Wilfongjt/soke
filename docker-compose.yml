@@ -1,0 +1,14 @@
+version: '3'
+# docker-compose up
+services:
+  web:
+    container_name: soke
+    image: wilfongjt/soke
+    build:
+      context: ./soke-web/
+    command: >
+      bash -c "npm install && npm run dev"
+    volumes:
+      - ./soke-web:/usr/src
+    ports:
+      - "3000:3000"
