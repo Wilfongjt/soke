@@ -1,0 +1,49 @@
+{
+    "template":
+        {
+            "AttributeDefinitions": [
+                {
+                    "AttributeName": "pk",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "sk",
+                    "AttributeType": "S"
+                },
+                {
+                    "AttributeName": "data",
+                    "AttributeType": "S"
+                }
+            ],
+            "TableName": "%table-name",
+            "KeySchema": [
+                {
+                    "AttributeName": "pk",
+                    "KeyType": "HASH"
+                },
+                {
+                    "AttributeName": "sk",
+                    "KeyType": "RANGE"
+                }
+            ],
+            "BillingMode": "PAY_PER_REQUEST",
+            "GlobalSecondaryIndexes": [
+                {
+                    "IndexName": "%index-name",
+                    "KeySchema": [
+                        {
+                            "AttributeName": "sk",
+                            "KeyType": "HASH"
+                        },
+                        {
+                            "AttributeName": "data",
+                            "KeyType": "RANGE"
+                        }
+                    ],
+                    "Projection": {
+                        "ProjectionType": "ALL"
+                    }
+                }
+            ]
+        }
+}
