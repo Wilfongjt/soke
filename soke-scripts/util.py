@@ -1,12 +1,23 @@
 import os
 from os.path import isfile, join
 from os import listdir
-from pathlib import Path
+#from pathlib import Path
 import json
 
 class Util:
 
-    def getJSON():
+    def getInput(self, prompt, default):
+
+        val = input('{} ({}): '.format(prompt, default))
+        if len(val) == 0:
+            val = default
+        if val in 'xqe':
+            print('terminated')
+            exit(1)
+
+        return val.strip()
+
+    def getJSON(self):
         return
 
     def writeProcessConfig(self, process_config):
@@ -39,6 +50,7 @@ class Util:
                     typedItem[k] = {"S": str(item[k])}
 
         return typedItem
+
     def makeDataProject(self, table_name_key):
         path = '../../data/{}/'.format(table_name_key)
         
@@ -108,20 +120,47 @@ class Util:
         return '../../../data/{}/output'.format(table_name_key)
         #return '{}/{}/output'.format(os.getcwd(),table_name_key)
 
-    
+    '''
+    causes grief for script calls
     def makeOutputFolder(self, outputfolder):
 
         config = Path(outputfolder)
 
         if not config.exists():
             os.mkdir(outputfolder)
+    '''
+    def removeOutputFiles(self, table_name_key):
+        outpath = self.getOutputFolder(table_name_key)
+        for delfile in self.getFileList(outpath):
+            #('delfile: ', delfile)
+            if delfile != '.DS_Store':
+              os.remove('{}/{}'.format(outpath, delfile))
+    '''
+    def getFiles(self, table_name_key, ext=None):
+        folder = self.getInputFolder(table_name_key)
 
+        return self.getFileList(folder,ending=ext)
+    '''
+    def getInputFiles(self, table_name_key, ext=None):
+        folder = self.getInputFolder(table_name_key)
+        return self.getFileList(folder,ending=ext)
+
+    def getOutputFiles(self, table_name_key, ext=None):
+        folder = self.getOutputFolder(table_name_key)
+        return self.getFileList(folder,ending=ext)
 
     def getFileList(self, path, ending=None):
         onlyfiles = [f for f in listdir(path) if isfile(join(path, f) )]
         if ending != None:
             onlyfiles = [f for f in onlyfiles if f.startswith(ending) or f.endswith(ending)]
         return onlyfiles
+
+
+
+    def getOneFile(self, table_name_key):
+        inputfolder = self.getInputFolder(table_name_key)
+        files = self.getFileList(inputfolder)
+        return '{}/{}'.format(inputfolder, files[0])
 
     def getTableDefinitions(self, path, ending='table_definitions.json'):
         onlyfiles = [f for f in listdir(path) if isfile(join(path, f) )]
@@ -208,10 +247,25 @@ class Util:
     def getSampleDocumentContents1(self):
         sample_doc = 'Will a form be developed to provide guidance on compliance for the new opioid education requirements related to implementing the Start Talking Form, and opioid disclosure form, required by Public Act 246 of 2017?'
         sample_doc += '\n \n'
-        sample_doc += 'The Department of Health and Human Services (DHHS) and Licensing and Regulatory Affairs (LARA) worked with various health care providers and stakeholders in developing a single page form that can be used to meet the requirements of this new law. This new form can be found under the “Prescribers” tab at the DHHS website: www.michigan.gov/stopoverdoses.'
-        sample_doc += '\n \n'
-        sample_doc += ' Is a provider required to use the state’s form? '
-        sample_doc += '\n \n'
-        sample_doc += '         No, but the provider will have to use a similar form that is saved to the patient’s medical record and complies with the requirements of Public Act 246 of 2017'
 
         return sample_doc
+
+    def loadEnv(self):
+        filename = '.env'
+        with open('{}'.format(filename), 'r') as f:
+            lines = f.readlines()
+            for ln in lines:
+                se = ln.split('=')
+                # print(len(se))
+                if len(se) == 2:
+                    if se[0][0]!='#':
+                        #print(se[0],se[1])
+                        os.environ[se[0]] = "{}".format(se[1])
+
+def main():
+
+    Util().loadEnv()
+    print('PY_HI', os.environ['PY_HI'])
+
+if __name__ == "__main__":
+    main()
