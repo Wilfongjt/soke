@@ -1,10 +1,24 @@
 <template>
   <div>
-    <div class="center">
+    <div>
+      <Header />
+      <!-- Nav /-->
       <nuxt />
+      <Footer />
     </div>
   </div>
 </template>
+<script>
+import Header from '@/components/Header'
+// import Nav from '@/components/Nav'
+import Footer from '@/components/Footer'
+export default {
+  components: {
+    Header,
+    Footer
+  }
+}
+</script>
 
 <style>
 html {
@@ -95,6 +109,7 @@ html {
 .links {
   padding-top: 15px;
 }
+
 .center {
   margin: 0;
   position: absolute;

@@ -123,7 +123,7 @@ module.exports.index = async (event) => {
    prepare a search for each word
   */
   for(i = 0; i < vals.length; i++){
-    let skv = "%w.1".replace("%w",vals[i]);
+    let skv = "%w#1".replace("%w",vals[i]);
     // let gsi_1 = "gsi_1_"
     param_list.push({
       TableName: process.env.TABLE_NAME,
@@ -166,9 +166,19 @@ module.exports.index = async (event) => {
 module.exports.document = async (event) => {
   /*
   returns all items for a document by pk
+  {
+    "pk": "d#001",
+    "sk": "s#001#000001#000001",
+    "data": "The brown fox jumped over the fence."
+  }
   */
   let msg = 'document';
   let pk = event.pathParameters && event.pathParameters.pk;
+  let headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type,Accept-Langauge",
+      "Access-Control-Allow-Methods": "OPTIONS,GET"
+  };
 
   if (pk === undefined) {
     msg = JSON.stringify({message: 'Missing pk {}'.replace('{}',pk)});
@@ -177,23 +187,30 @@ module.exports.document = async (event) => {
       body: msg
     };
   }
+  pk = pk.replace('-', '#'); // key are formated with # and # is reserved in url so replace
   var params = {
+    TableName: process.env.TABLE_NAME,
+    KeyConditionExpression: "pk = :a and begins_with(sk, :t)",
     ExpressionAttributeValues: {
-     ":v1": pk
-    },
-    KeyConditionExpression: "pk = :v1",
-    TableName: process.env.TABLE_NAME
+     ":a": pk,
+     ":t": "s#"
+    }
    };
    try {
 
      const data = await docClient.query(params).promise();
 
-     return { statusCode: 200, body: JSON.stringify({ params, data }) };
+     return { statusCode: 200,
+       headers: headers,
+       body: JSON.stringify({ params, data }) };
+
    } catch (error){
+
      return {
-       statusCode: 400,
-       error: 'Could not post: ${error.stack}'
+       statusCode: error.statusCode,
+       error: error.message
      };
+
    }
 
 };

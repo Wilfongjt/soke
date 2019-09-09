@@ -22,7 +22,8 @@ export default {
   env: {
     GUEST: process.env.GUEST || '{"username": "guest", "password": "Guest.9182"}',
     SIGNIN: process.env.SIGNIN || 'https://api.lyttlebit.com/soke/signin',
-    INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/index'
+    INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/index',
+    INDEX: process.env.DOCUMENT || 'https://api.lyttlebit.com/soke/document'
   },
   /*
   ** Headers of the page

@@ -23,7 +23,8 @@
     <div v-for="item in page.items" :key="item.id">
       <span>&nbsp;</span>
       <p class="subtitle">
-        {{ item.title }}
+        <!-- nuxt-link to="/about">{{ item.title }}</nuxt-link -->
+        <a href="#" @click="onClick(item)">{{ item.title }}</a>
       </p>
       <p>
         <span v-html="item.description" />
@@ -74,6 +75,9 @@ export default {
         'Authorization': this.session.authorizationToken
       }
     },
+    awsGatewayBodyDocument () {
+
+    },
     awsGatewayBody () {
       return this.form
     },
@@ -83,7 +87,7 @@ export default {
     }
   },
   mounted () {
-    // at this point we want to make a connection a guest connection to our services
+    // at this point we want to make a guest connection to our services
     this.awsHandlers.awsSignIn(process.env.SIGNIN, this.awsGuestHeader, this.awsGuestBody)
       .then((response) => {
         if (response.status === 200) {
@@ -101,8 +105,8 @@ export default {
         }
       })
       .catch((err) => {
-        this.feedBack('Guest Sign In failed (%s)'.replace('%s', err))
-        this.log('Guest Sign In failed (%s)'.replace('%s', err))
+        this.feedBack('Guest Sign In is disturbingly incorrect (%s)'.replace('%s', err))
+        this.log('Guest Sign In is disturbingly incorrect (%s)'.replace('%s', err))
         this.session.authorizationToken = 'Authorization'
       })
   },
@@ -129,6 +133,31 @@ export default {
       }
       return desc
     },
+    onClick (item) {
+      this.feedBack(item.pk)
+      this.awsHandlers.awsDocument(process.env.DOCUMENT, this.awsGatewayHeader, this.awsGatewayBodyDocument)
+        .then((response) => {
+          if (response.status === 200) {
+            let i = 0
+            // check for results field
+            if (response.data.hasOwnProperty('results')) {
+              for (i = 0; i < response.data.results.length; i++) {
+                this.addItems(response.data.results[i].Items)
+              }
+            } else {
+              this.log('no results for (%s)'.replace('%s', this.form.words))
+            }
+            this.feedBack('Type another!')
+          } else {
+            this.feedBack('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
+            this.log('Whoa, I did not see this comming (%s)!'.replace('%s', response.status))
+          }
+        })
+        .catch((err) => {
+          this.feedBack('Something unexpected happened (%s)!'.replace('%s', err))
+          this.log('Something unexpected happened (%s)!'.replace('%s', err))
+        })
+    },
     onSubmit () { // submit button
       // no words then no searches
       if (this.form.words === null || this.form.words === undefined || this.form.words.length === 0) {
@@ -136,7 +165,8 @@ export default {
         return
       }
       // clear the list
-      this.page.items = []
+      // this.page.items = []
+      this.page.items.length = 0
       // make the call
       this.awsHandlers.awsIndex(this.awsGatewayURL, this.awsGatewayHeader, this.awsGatewayBody)
         .then((response) => {
@@ -153,7 +183,7 @@ export default {
             this.feedBack('Type another!')
           } else {
             this.feedBack('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
-            this.log('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
+            this.log('Whoa, I did not see this comming (%s)!'.replace('%s', response.status))
           }
         })
         .catch((err) => {
@@ -164,10 +194,13 @@ export default {
     addItem (item) {
       // show result item to user
       const id = this.page.items.length + 1
+      const pk = item.pk
       const title = item.title
       const description = this.highlight(item.data)
+      // this.feedBack('hi' + JSON.stringify(item))
       this.page.items.push({
         id,
+        pk,
         title,
         description
       })
@@ -176,10 +209,11 @@ export default {
       // break down result into managable chunks
       let i = 0
       for (i = 0; i < itemArray.length; i++) {
+        this.feedBack('hi' + JSON.stringify(itemArray[i]))
         this.addItem(itemArray[i])
       }
     }
-  }
+  } // methods
 }
 </script>
 
