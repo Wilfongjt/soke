@@ -20,7 +20,7 @@
       </p>
     </form>
     <!-- Search Result -->
-    <div v-for="item in page.items" :key="item.id">
+    <div v-for="item in page.items" :key="item.id" class="left-justify">
       <span>&nbsp;</span>
       <p class="subtitle">
         <!-- nuxt-link to="/about">{{ item.title }}</nuxt-link -->
@@ -35,13 +35,16 @@
 
 <script>
 import { AWSHandlers } from './mixins/AWSHandlers.js'
-
+import { Document } from './mixins/Document.js'
 export default {
 
   data () {
     return {
       form: {
         words: ''
+      },
+      path_parameter: {
+        id: ''
       },
       submitStatus: 'PENDING',
       page: {
@@ -61,13 +64,12 @@ export default {
     awsHandlers () {
       return new AWSHandlers(this)
     },
-    awsGuestHeader () {
+    awsGuest () {
       return {
-        'Content-Type': 'application/json'
+        url: process.env.SIGNIN,
+        header: { 'Content-Type': 'application/json' },
+        body: process.env.GUEST
       }
-    },
-    awsGuestBody () {
-      return process.env.GUEST
     },
     awsGatewayHeader () {
       return {
@@ -75,23 +77,29 @@ export default {
         'Authorization': this.session.authorizationToken
       }
     },
-    awsGatewayBodyDocument () {
-
+    awsDocument () {
+      return {
+        header: this.awsGatewayHeader,
+        url: '%a/%b'
+          .replace('%a', process.env.DOCUMENT)
+          .replace('%b', this.path_parameter.id)
+      }
     },
-    awsGatewayBody () {
-      return this.form
-    },
-    awsGatewayURL () {
-      // no keywords
-      return process.env.INDEX
+    awsIndex () {
+      return {
+        url: process.env.INDEX,
+        header: this.awsGatewayHeader,
+        body: this.form
+      }
     }
   },
   mounted () {
     // at this point we want to make a guest connection to our services
-    this.awsHandlers.awsSignIn(process.env.SIGNIN, this.awsGuestHeader, this.awsGuestBody)
+    // this.awsHandlers.awsSignIn(process.env.SIGNIN, this.awsGuestHeader, this.awsGuestBody)
+    this.awsHandlers.awsSignIn(this.awsGuest.url, this.awsGuest.header, this.awsGuest.body)
       .then((response) => {
         if (response.status === 200) {
-          this.session.authorizationToken = response.data.token
+          this.session.authorizationToken = response.data.results[0].token
           // check for results field
           this.feedBack('Type another!')
           this.addItem({
@@ -119,9 +127,6 @@ export default {
     feedBack (msg) {
       this.page.subtitle = msg
     },
-    wordMe () {
-      this.form.words = 'dog '
-    },
     highlight (description) {
       let desc = description
       let i = 0
@@ -131,23 +136,34 @@ export default {
           '<strong>%s</strong>'.replace('%s', this.wordList[i] + ' ')
         )
       }
+      // heading test
+      if (!desc.endsWith('.') && !desc.endsWith('?') && !desc.endsWith(':') && desc.length <= 80) {
+        desc = '<h1>%d<h1>'.replace('%d', desc)
+      }
+      // question test
+      if (desc.endsWith('?')) {
+        desc = '<span style="color:#21618C">%d<span>'.replace('%d', desc)
+      }
+
       return desc
     },
     onClick (item) {
-      this.feedBack(item.pk)
-      this.awsHandlers.awsDocument(process.env.DOCUMENT, this.awsGatewayHeader, this.awsGatewayBodyDocument)
+      // this.feedBack(item.pk)
+      // stash the document id for later
+      this.path_parameter.id = item.pk.replace('#', '-') // # is an html reserved char in url... so patch it
+      this.page.items.length = 0
+
+      this.awsHandlers.awsDocument(this.awsDocument.url, this.awsDocument.header)
         .then((response) => {
           if (response.status === 200) {
-            let i = 0
+            // let i = 0
             // check for results field
             if (response.data.hasOwnProperty('results')) {
-              for (i = 0; i < response.data.results.length; i++) {
-                this.addItems(response.data.results[i].Items)
-              }
+              this.addItems(new Document(response.data.results[0].Items).process().getItems())
+              this.feedBack('May I have another please.')
             } else {
-              this.log('no results for (%s)'.replace('%s', this.form.words))
+              this.log('Click provided no results for (%s)'.replace('%s', this.path_parameter.id))
             }
-            this.feedBack('Type another!')
           } else {
             this.feedBack('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
             this.log('Whoa, I did not see this comming (%s)!'.replace('%s', response.status))
@@ -165,10 +181,9 @@ export default {
         return
       }
       // clear the list
-      // this.page.items = []
       this.page.items.length = 0
       // make the call
-      this.awsHandlers.awsIndex(this.awsGatewayURL, this.awsGatewayHeader, this.awsGatewayBody)
+      this.awsHandlers.awsIndex(this.awsIndex.url, this.awsIndex.header, this.awsIndex.body)
         .then((response) => {
           if (response.status === 200) {
             let i = 0
@@ -177,18 +192,18 @@ export default {
               for (i = 0; i < response.data.results.length; i++) {
                 this.addItems(response.data.results[i].Items)
               }
+              this.feedBack('Type another!')
             } else {
-              this.log('no results for (%s)'.replace('%s', this.form.words))
+              this.log('Try again, no results for (%s)'.replace('%s', this.form.words))
             }
-            this.feedBack('Type another!')
           } else {
             this.feedBack('Whoa, I did not set this comming (%s)!'.replace('%s', response.status))
             this.log('Whoa, I did not see this comming (%s)!'.replace('%s', response.status))
           }
         })
         .catch((err) => {
-          this.feedBack('Something unexpected happened (%s)!'.replace('%s', err))
-          this.log('Something unexpected happened (%s)!'.replace('%s', err))
+          this.feedBack('Something unexpected happened while searching (%s)!'.replace('%s', err))
+          this.log('Something unexpected happened while searching (%s)!'.replace('%s', err))
         })
     },
     addItem (item) {
@@ -209,7 +224,6 @@ export default {
       // break down result into managable chunks
       let i = 0
       for (i = 0; i < itemArray.length; i++) {
-        this.feedBack('hi' + JSON.stringify(itemArray[i]))
         this.addItem(itemArray[i])
       }
     }
@@ -220,6 +234,14 @@ export default {
 <style scoped>
 .band {
   width: 100%;
+}
+.left-justify {
+  text-align: left;
+  margin-left: 60px;
+  margin-right: 60px;
+}
+.question {
+  color: #21618C
 }
 
 </style>

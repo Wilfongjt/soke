@@ -1,21 +1,29 @@
 
-import pkg from './package'
-console.log('process.env.NODE_ENV: ' + process.env.NODE_ENV)
-console.log('process.env.DEPLOY_ENV: ' + process.env.DEPLOY_ENV)
+// import pkg from './package'
+// console.log('process.env.NODE_ENV: ' + process.env.NODE_ENV)
+// console.log('process.env.DEPLOY_ENV: ' + process.env.DEPLOY_ENV)
+/* eslint-disable no-console */
+// console.log('process.env.NODE_ENV: ' + process.env.NODE_ENV)
+/* eslint-enable no-console */
 if (process.env.NODE_ENV !== 'production') {
-  process.env.DEPLOY_ENV=''
+  process.env.DEPLOY_ENV = ''
   require('dotenv').config()
-  console.log('dotenv load')
+  /* eslint-disable no-console */
+  console.log('dotenv')
+  console.log('process.env.SIGNIN: ' + process.env.SIGNIN)
+  console.log('process.env.INDEX: ' + process.env.INDEX)
+  console.log('process.env.DOCUMENT: ' + process.env.DOCUMENT)
+  /* eslint-enable no-console */
 } else {
-   // switch to
-   process.env.DEPLOY_ENV='GH_PAGES'
+  // switch to
+  process.env.DEPLOY_ENV = 'GH_PAGES'
 }
 // allow static app to run in subfolder of host
 const routerBase = process.env.DEPLOY_ENV === 'GH_PAGES' ? {
-   router: {
-        base: '/soke20190815143820/'
-   }
- } : {}
+  router: {
+        base: '/soke20190910132238/'
+  }
+} : {}
 export default {
   ...routerBase,
   mode: 'spa',
@@ -23,7 +31,7 @@ export default {
     GUEST: process.env.GUEST || '{"username": "guest", "password": "Guest.9182"}',
     SIGNIN: process.env.SIGNIN || 'https://api.lyttlebit.com/soke/signin',
     INDEX: process.env.INDEX || 'https://api.lyttlebit.com/soke/index',
-    INDEX: process.env.DOCUMENT || 'https://api.lyttlebit.com/soke/document'
+    DOCUMENT: process.env.DOCUMENT || 'https://api.lyttlebit.com/soke/document'
   },
   /*
   ** Headers of the page
@@ -63,8 +71,10 @@ export default {
   /*
   ** Nuxt.js modules
   */
-modules: [
+  modules: [
     '@nuxtjs/dotenv',
+    // look for .env in parent folder to this app's folder
+    // ['@nuxtjs/dotenv', { path: '../' }],
     // Doc: https://axios.nuxtjs.org/usage
     '@nuxtjs/axios'
   ],
