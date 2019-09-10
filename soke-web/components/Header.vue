@@ -1,15 +1,20 @@
 <template>
-  <div class="header">
+  <div class="band">
     <h1>...</h1>
   </div>
 </template>
 
 <style scoped>
-header {
+
+.band {
   width: 100%;
-  height: 30px;
   display: flex;
-  justify-content: center;
+  flex-flow: column nowrap;
   align-items: center;
+  text-align: center;
+}
+.img_banner {
+  max-width: 100%;
+  max-height: 110px;
 }
 </style>

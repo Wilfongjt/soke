@@ -1,4 +1,4 @@
-'use strict';
+'use strict'; // dont worry about linting error ...aws
 const AWS = require('aws-sdk');
 const docClient = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-08-10'});
 const authorizer = require('./authorizer');
@@ -22,11 +22,12 @@ module.exports.signin = async (event, context) => {
   try {
     const user = users.signin(username, password);
     const token = authorizer.generateToken({user});
+    const results = [{token: token}];
     const response = {
       statusCode: 200,
       headers: cors_headers,
       body: JSON.stringify({
-        token
+        results
       })
     };
     return response;
@@ -59,27 +60,24 @@ module.exports.authorize = async (event, context) => {
     const userId = user.username;
     const authorizerContext = { user: JSON.stringify(user) };
     const policy = authorizer.generatePolicy(userId, effect, event.methodArn, authorizerContext);
-
     return policy;
   } catch (error) {
     console.log('Unauthorized');
     return error.message;
-
   }
 };
 
 module.exports.index = async (event) => {
-  // return list of words with link to documents
-  // need to remove duplicate words
-  //let keywords = event.queryStringParameters && event.queryStringParameters.keywords;
-  // convert the words to lowercase before search...get around mac capitalizing first char in textbox
+  /*
+    return list of words with link to documents
+    convert the words to lowercase before search...get around mac capitalizing first char in textbox
+  */
   const body = JSON.parse(event.body);
   let keywords = undefined;
   let vals = []; // list of keywords
   // let param = {};
   let param_list = [];
   let data = [];
-
   let headers = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type,Accept-Langauge",
@@ -92,7 +90,6 @@ module.exports.index = async (event) => {
   if (keywords === undefined
     || keywords === null
   ) {
-
     return {
       statusCode: 200, // no requested keywords
       headers: headers,
@@ -101,7 +98,6 @@ module.exports.index = async (event) => {
   }
   // keyword is empty
   if (keywords.length === 0) {
-
     return {
       statusCode: 400, // bad format
       headers: headers,
@@ -110,7 +106,6 @@ module.exports.index = async (event) => {
   }
   // handle multiple keywords
   vals = keywords.split(" ");
-
   if(vals.length === 0){
     return {
       statusCode: 400,
@@ -123,8 +118,7 @@ module.exports.index = async (event) => {
    prepare a search for each word
   */
   for(i = 0; i < vals.length; i++){
-    let skv = "%w.1".replace("%w",vals[i]);
-    // let gsi_1 = "gsi_1_"
+    let skv = "%w#1".replace("%w",vals[i]);
     param_list.push({
       TableName: process.env.TABLE_NAME,
       IndexName: process.env.GSI_1,
@@ -138,7 +132,6 @@ module.exports.index = async (event) => {
   run all the searches
   */
   const plst = [];
-
   try {
     for(i=0; i < param_list.length; i++){
       plst.push(docClient.query(param_list[i]).promise());
@@ -146,11 +139,9 @@ module.exports.index = async (event) => {
   } catch(error){
     return {statusCode: 400, body: error};
   }
-
   // wait for the searches to end
   try {
     const results = await Promise.all(plst);
-
     return {
       statusCode: 200,
       headers: headers,
@@ -166,9 +157,23 @@ module.exports.index = async (event) => {
 module.exports.document = async (event) => {
   /*
   returns all items for a document by pk
+  returns
+  {
+    "results": [
+      {
+        "Items": [
+          {...}
+       ]
+      }
+  }
   */
   let msg = 'document';
   let pk = event.pathParameters && event.pathParameters.pk;
+  let headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type,Accept-Langauge",
+      "Access-Control-Allow-Methods": "OPTIONS,GET"
+  };
 
   if (pk === undefined) {
     msg = JSON.stringify({message: 'Missing pk {}'.replace('{}',pk)});
@@ -177,23 +182,25 @@ module.exports.document = async (event) => {
       body: msg
     };
   }
+  pk = pk.replace('-', '#'); // key are formated with # and # is reserved in url so replace
   var params = {
+    TableName: process.env.TABLE_NAME,
+    KeyConditionExpression: "pk = :a and begins_with(sk, :t)",
     ExpressionAttributeValues: {
-     ":v1": pk
-    },
-    KeyConditionExpression: "pk = :v1",
-    TableName: process.env.TABLE_NAME
+     ":a": pk,
+     ":t": "s#"
+    }
    };
    try {
-
-     const data = await docClient.query(params).promise();
-
-     return { statusCode: 200, body: JSON.stringify({ params, data }) };
+     const rslts = await docClient.query(params).promise();
+     const results = [{Items: rslts.Items}];
+     return { statusCode: 200,
+       headers: headers,
+       body: JSON.stringify({ results }) };
    } catch (error){
      return {
-       statusCode: 400,
-       error: 'Could not post: ${error.stack}'
+       statusCode: error.statusCode,
+       error: error.message
      };
    }
-
 };

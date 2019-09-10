@@ -4,6 +4,8 @@ services:
   web:
     container_name: soke
     image: wilfongjt/soke
+    environment:
+    - NODE_ENV=development
     build:
       context: ./soke-web/
     command: >

@@ -18,7 +18,8 @@ provider:
   # Retain says create but dont overwrite existing data table
   tableDeletionPolicy: Retain
 
-  tableGSI_1: gsi_1_${self:provider.tableName}
+  tableGSI_1: gsi_${self:provider.basePath}_sk_data_${self:provider.stage}
+  #tableGSI_1: gsi_1_${self:provider.tableName}
   # apiKeys are first step to securing your gateway api service
   # apiKeys remove the browser's access to the gateway.
   # apiKeys will appear in command window on deploy
@@ -93,7 +94,8 @@ functions:
           method: get
           path: document/{pk}
           cors: true
-          private: true # apikey
+          #authorizer: authorize # requires a signin
+          # private: true # apikey
 
 plugins:
   # configures custom domain ...
@@ -107,7 +109,7 @@ custom:
     # Set the table name here so we can use it while testing locally
     tableName: ${self:provider.tableName}
     tableDeletionPolicy: ${self:provider.tableDeletionPolicy}
-    gsi_1: ${self:provider.tableGSI_1}
+    #gsi_1: ${self:provider.tableGSI_1}
 
     profiles:
       dev: devProfile
@@ -145,4 +147,4 @@ resources:
   # including table resources (resources/dynamodb-table.yml) will cause a deploy errror
   #  * ServerlessError: An error occurred: Table1 - greet_dev already exists.
   # uncomment the following to create a table from scratch
-  # - ${file(resources/dynamodb-table.yml)}
+  #- ${file(resources/dynamodb-table.yml)}
